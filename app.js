@@ -58,7 +58,7 @@ mongoose.connect(keys.MongoURI, {
 });
 // set environment variable for port
 const port = process.env.PORT || 3000;
-// Handle routes
+// Handle routes  
 app.get('/', ensureGuest, (req, res) => {
     res.render('home');
 });
@@ -112,6 +112,14 @@ app.get('/profile', ensureAuthentication, (req, res) => {
         });
     });
 });
+//Handle ROute for all users
+app.get('/users', (req, res) => {
+    User.find({}).then((users) => {
+        res.render('users', {
+            users: users
+        });
+    });
+});
 //Handle Email Post Route
 app.post('/addEmail', (req, res) => {
     const email = req.body.email;
@@ -121,7 +129,27 @@ app.post('/addEmail', (req, res) => {
             res.redirect('/profile'); 
         })
     })
-})
+});
+//Handle Phone Post Route
+app.post('/addPhone', (req, res) => {
+    const phone = req.body.phone;
+    User.findById({_id: req.user._id} ).then((user)=>{
+        user.phone = phone;
+        user.save().then(() => {
+            res.redirect('/profile'); 
+        })
+    })
+});
+// Handle Location Post Route
+app.post('/addLocation', (req, res) => {
+    const location = req.body.location;
+    User.findById({_id: req.user._id} ).then((user)=>{
+        user.location = location;
+        user.save().then(() => {
+            res.redirect('/profile'); 
+        })
+    })
+});
 // Handle User logout route
 app.get('/logout', (req, res) => {
     req.logout();
