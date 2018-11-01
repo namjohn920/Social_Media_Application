@@ -6,10 +6,12 @@ const passport = require('passport');
 const session = require("express-session");
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const methodOverride = require('method-override');
 // Connect to MongoURI exported from external file
 const keys = require('./config/keys');
-// User collection
+// Load Models
 const User = require('./models/user');
+const Post = require('./models/post');
 // Link passports to the server
 require('./passport/google-passport');
 require('./passport/facebook-passport');
@@ -32,6 +34,7 @@ const app = express();
      resave: true,
      saveUninitialized: true
  }));
+ app.use(methodOverride('_method'));
  app.use(passport.initialize());
  app.use(passport.session());
  // set global vars for user
@@ -105,20 +108,28 @@ app.get('/auth/instagram/callback',
   });
 // Handle profile route
 app.get('/profile', ensureAuthentication, (req, res) => {
-    User.findById({_id: req.user._id})
-    .then((user) => {
+    Post.find({user: req.user._id}).populate('user').sort({date:'desc'})
+    .then((posts) => {
         res.render('profile', {
-            user:user
+            posts:posts
         });
     });
 });
 //Handle ROute for all users
-app.get('/users', (req, res) => {
+app.get('/users', ensureAuthentication, (req, res) => {
     User.find({}).then((users) => {
         res.render('users', {
             users: users
         });
     });
+});
+//Display one user profile
+app.get('/user/:id', (req, res)=>{
+    User.findById({_id: req.params.id}).then((user) => {
+        res.render('user', {
+            user:user
+        })
+    })
 });
 //Handle Email Post Route
 app.post('/addEmail', (req, res) => {
@@ -147,9 +158,90 @@ app.post('/addLocation', (req, res) => {
         user.location = location;
         user.save().then(() => {
             res.redirect('/profile'); 
-        })
-    })
+        });
+    });
 });
+//Handle GET Routes for posts
+app.get('/addPost', (req, res) => {
+    res.render('addPost');   
+});
+//handle POST route TO SAVE POSTS
+app.post('/savePost', (req, res) => {
+    var allowComments;
+    if(req.body.allowComments){
+        allowComments = true;
+    } else{
+        allowComments = false;
+    }
+    const newPost = {
+        title: req.body.title,
+        body: req.body.body,
+        status: req.body.status,
+        allowComments: allowComments,
+        user: req.user.id
+    }
+    new Post(newPost).save().then(() => {
+        res.redirect('/posts');
+    });
+});
+//Handle Edit Post route
+app.get('/editPost/:id', (req, res)=>{
+    Post.findOne({_id: req.params.id}).then((post)=>{
+        res.render('editingPost', {
+            post:post
+        });
+    });
+});
+//Handle PUT Route to save the edited post
+app.put('/:id', (req, res) => {
+    Post.findOne({_id:req.params.id})
+    .then((post) => {
+        var allowComments;
+        if(req.body.allowComments){
+            allowComments = true;
+        }else{
+            allowComments = false;
+        }
+        post.title = req.body.title;
+        post.body = req.body.body;
+        post.status = req.body.status;
+        post.allowComments = allowComments;
+        post.save().then(() => {
+            res.redirect('/profile');
+        });
+    });
+});
+//HANDLE DELETE ROUTE
+app.delete('/:id', (req, res) => {
+    Post.remove({_id: req.params.id})
+    .then(() => {
+        res.redirect('/profile');
+    });
+});
+//Handle Posts route
+app.get('/posts', ensureAuthentication, (req,res)=>{
+    Post.find({
+        status: 'public'
+    }).populate('user').populate('comment.commentUser').sort({date:'desc'}).then((posts)=> {
+        res.render('publicPosts', {
+            posts:posts
+        });
+    });
+});
+//save comments to database
+app.post('/addComment/:id', (req, res) => {
+    Post.findOne({_id: req.params.id}).then((post)=> {
+        const newComment = {
+            commentBody: req.body.commentBody,
+            commentUser: req.user._id,
+        }
+        post.comment.push(newComment);
+        post.save().then(() => {
+            res.redirect('/posts');
+        });
+    }); 
+});
+
 // Handle User logout route
 app.get('/logout', (req, res) => {
     req.logout();

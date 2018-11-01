@@ -40,7 +40,31 @@
         </form>
       {{/if}}
     </div>
-  </div> 
+  </div>
+  <div class="container">
+    <h1>My Posts</h1>
+    {{#each posts}}
+    <div class="media">
+        <img class="mr-3 post-user-pic" src="{{user.image}}">
+        <div class="media-body">
+            <h3 class="mt-0">{{user.fullname}}</h3>
+            <h4>{{title}} <small>{{status}}</small> </h4>
+            <p>{{body}}</p>
+            <small>{{date}}</small>
+            <br>
+            <p>
+              <a href="/editPost/{{_id}}"><i class="fa fa-pencil"></i></a>
+              <form action="/{{_id}}?_method=DELETE" method="POST">
+                <button type="submit" class="btn btn-danger"><i class="fa fa-trash"></i></button>
+              </form>
+            </p>
+        </div>
+    </div>
+    <hr>
+    {{else}}
+    <p>You don have any posts</p>
+    {{/each}}
+</div> 
 </div>
  
   

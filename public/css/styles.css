@@ -63,3 +63,13 @@ h1 {
 .col-sm-4 {
     margin-bottom: 10px;
 }
+
+.post-user-pic {
+    width: 100px;
+    height: auto;
+}
+
+#comment-user-picture {
+    width: 65px;
+    height: auto;
+}
