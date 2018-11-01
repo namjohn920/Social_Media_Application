@@ -1,0 +1,17 @@
+<div class="container">
+    <div class="row">
+        <div class="col-sm-4">
+            <h1>Make a Payment</h1>
+            <p>Pay $2</p>
+        </div>
+        <form action="/acceptPayment" method="POST">
+            <script src="https://checkout.stripe.com/checkout.js" class="stripe-button" 
+                data-key= "{{StripePublishableKey}}",
+                data-amount="200" data-name="Sharing Post" 
+                data-description="Payment for Post" 
+                data-image="https://stripe.com/img/documentation/checkout/marketplace.png"
+                data-locale="auto" data-currency="cad">
+            </script>
+        </form>
+    </div>
+</div>

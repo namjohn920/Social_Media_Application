@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser');
 const methodOverride = require('method-override');
 // Connect to MongoURI exported from external file
 const keys = require('./config/keys');
+const stripe = require('stripe')(keys.StripeSecretKey);
 // Load Models
 const User = require('./models/user');
 const Post = require('./models/post');
@@ -163,7 +164,35 @@ app.post('/addLocation', (req, res) => {
 });
 //Handle GET Routes for posts
 app.get('/addPost', (req, res) => {
-    res.render('addPost');   
+    // res.render('addPost');  
+    res.render('payment', {
+        StripePublishableKey: keys.StripePublishableKey
+    });
+});
+//Handle payment post route
+app.post('/acceptPayment', (req,res) =>{
+    const amount = 500;
+    stripe.customers.create({
+        email:req.body.stripeEmail,
+        source: req.body.stripeToken
+    })
+    .then((customer)=> {
+        stripe.charges.create({
+            amount: amount,
+            currency: 'usd',
+            description: 'create post',
+            customer: customer.id
+        })
+        .then((charge) => {
+            res.render('success', {
+                charge:charge
+            });
+        });
+    });
+});
+//Handle Route to redirect to display post form
+app.get('/displayPostForm', (req,res) =>{
+    res.render('addPost');
 });
 //handle POST route TO SAVE POSTS
 app.post('/savePost', (req, res) => {
@@ -224,6 +253,16 @@ app.get('/posts', ensureAuthentication, (req,res)=>{
         status: 'public'
     }).populate('user').populate('comment.commentUser').sort({date:'desc'}).then((posts)=> {
         res.render('publicPosts', {
+            posts:posts
+        });
+    });
+});
+//display single user's all public posts
+app.get('/showposts/:id', (req, res) => {
+    Post.find({user:req.params.id, status: 'public'}).populate('user')
+    .sort({date: 'desc'})
+    .then((posts) => {
+        res.render('showUserPosts',{
             posts:posts
         });
     });
